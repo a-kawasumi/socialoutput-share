@@ -1,0 +1,9 @@
+# ローカル確認用
+
+version: "3.7"
+services:
+  php:
+      build:
+        context: .
+      ports:
+        - 8080:8080
