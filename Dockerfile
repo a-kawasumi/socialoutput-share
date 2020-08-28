@@ -2,7 +2,7 @@ FROM composer:latest as build
 
 WORKDIR /app
 
-RUN composer create-project --prefer-dist laravel/laravel src
+COPY . /app
 
 FROM php:7.3-apache
 
