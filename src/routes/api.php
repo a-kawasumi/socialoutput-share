@@ -18,4 +18,10 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
 
+// slack
+Route::get('/slack', "Api\SlackController@index");
+
+// google sheet
+Route::get('/google_sheet', "Api\GoogleSheetController@index");
+
 Route::get('/sample/hello', "Sample\SampleController@hello");
