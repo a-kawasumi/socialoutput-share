@@ -5,5 +5,7 @@ services:
   php:
       build:
         context: .
+      volumes:
+        - "./:/var/www"
       ports:
         - 8080:8080
