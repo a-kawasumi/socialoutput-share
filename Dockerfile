@@ -6,6 +6,9 @@ COPY . /app
 
 FROM php:7.3-apache
 
+# composer install
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
 EXPOSE 8080
 
 COPY --from=build /app /var/www/
