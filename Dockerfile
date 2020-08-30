@@ -10,6 +10,7 @@ COPY php.ini /usr/local/etc/php/
 
 RUN apt update
 RUN apt install -y git
+RUN apt install -y vim
 
 # composer install
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
