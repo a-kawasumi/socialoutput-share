@@ -13,9 +13,27 @@ use Google_Service_Sheets_ValueRange;
 
 class GoogleSheetController extends Controller
 {
+    /**
+     * Spreadsheetへの接続確認用
+     */
     public function index(Request $request) {
         $response = [];
 
+        //保存するデータ
+        $values = [
+            ["列A test", "列B test"]
+        ];
+
+        $response['google_response'] = self::create($values);
+
+        $response['message'] = 'success';
+        return new JsonResponse($response);
+    }
+
+    /**
+     * Spreadsheetに書き込むデータの作成
+     */
+    public static function create($values) {
         // アカウント認証情報インスタンスを作成
         $client = new Google_Client();
 
@@ -32,11 +50,6 @@ class GoogleSheetController extends Controller
         $scopes = [Google_Service_Sheets::SPREADSHEETS];
         $client->setScopes($scopes);
 
-        //保存するデータ
-        $values = [
-            ["列A test", "列B test"]
-        ];
-
         //データ操作領域を設定
         $body = new Google_Service_Sheets_ValueRange([
             'values' => $values,
@@ -44,16 +57,13 @@ class GoogleSheetController extends Controller
 
         //追記
         $googleResponse = $sheet->spreadsheets_values->append(
-            env("GOOGLE_SPREADSHEETS_ID"), // 作成したスプレッドシートのIDを入力
+            env("GOOGLE_SPREADSHEETS_ID"), // 対象スプレッドシートのID
             'note_sheet', //シート名
             $body, //データ
             ["valueInputOption" => 'USER_ENTERED']
         );
 
-        //書き込んだ処理結果を確認
-        $response['google_response'] = $googleResponse->getUpdates();
-
-        $response['message'] = 'success';
-        return new JsonResponse($response);
+        //書き込んだ処理結果
+        return $googleResponse->getUpdates();
     }
 }
