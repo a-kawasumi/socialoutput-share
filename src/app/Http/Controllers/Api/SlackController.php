@@ -66,14 +66,14 @@ class SlackController extends Controller
         //     return response('#000_socialoutput_share チャンネルのみ対応しています', 200);
         // }
 
-        // $subtype = $event['subtype'];
-        // if ($subtype != 'message_changed') {
-        //     return response('subtypeがmessage_changed以外は未対応です', 200);
-        // }
-
-        if (!array_key_exists('message', $event)) {
-            SlackUtil::postLog($request->all(), "⛅️ messageが見つかりません");
-            return response('messageが見つかりません', 200);
+        if (array_key_exists('subtype', $event)) {
+            $subtype = $event['subtype'];
+            if ($subtype == "message_deleted") {
+                return response("削除は未対応", 200);
+            }
+            if ($subtype == "message_changed") {
+                return response("編集は未対応", 200);
+            }
         }
 
         // messageの抽出
