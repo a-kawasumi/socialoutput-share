@@ -26,3 +26,4 @@ Route::post('/slack/events', "Api\SlackController@events");
 Route::get('/google_sheet', "Api\GoogleSheetController@index");
 
 Route::get('/sample/hello', "Sample\SampleController@hello");
+Route::get('/sample/post_slack', "Sample\SampleController@postSlack");

@@ -10,6 +10,7 @@ use Session;
 use Memcached;
 use DB;
 use Cookie;
+use App\Libs\Api\SlackUtil;
 
 class SampleController extends Controller
 {
@@ -22,6 +23,18 @@ class SampleController extends Controller
 
     public function phpinfo() {
         phpinfo();
+    }
+
+    /**
+     * 自分へのslack通信テスト
+     */
+    public function postSlack() {
+        $response = [];
+
+        $result = SlackUtil::postMessage("WMGECKETX", "socialoutput-share テスト");
+        $response['slack_result'] = $result;
+
+        return new JsonResponse($response);
     }
 
     /**
