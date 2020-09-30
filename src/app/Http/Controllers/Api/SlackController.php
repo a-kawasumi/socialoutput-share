@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 use App\Libs\Api\SlackUtil;
+use App\Http\Controllers\Api\SlackControllerUtil;
 use App\Http\Controllers\Api\GoogleSheetController;
 
 class SlackController extends Controller
@@ -50,23 +51,12 @@ class SlackController extends Controller
             // 認証
             $response['challenge'] = $request->input('challenge');
             return new JsonResponse($response);
-        } elseif ($type != "event_callback") {
-            return response('typeがevent_callback以外は未対応です。', 200);
         }
 
-        $token = $request->input('token');
-        if ($token != env('SLACK_VERIFICATION_TOKEN')) {
-            return response('tokenの値が不正です', 200);
-        }
-
-        $apiAppID = $request->input('api_app_id');
-        if ($apiAppID != env('SLACK_API_APP_ID')) {
-            return response('許可されていないSlackアプリケーションです', 200);
-        }
-
-        $workspaceID = $request->input('team_id');
-        if ($workspaceID != env('SLACK_WORKSPACE_ID')) {
-            return response('許可されていないworkspaceです', 200);
+        // 正しいリクエストか判定
+        list($isValid, $message)  = SlackControllerUtil::isValid($request);
+        if (!$isValid) {
+            return response($message, 200);
         }
 
         $event = $request->input('event');
