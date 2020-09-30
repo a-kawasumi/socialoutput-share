@@ -9,6 +9,7 @@ class SlackUtil {
     const DEFAULT_HEADERS = [
         "Content-Type: application/x-www-form-urlencoded,application/json"
     ];
+    const AUTHOR_SLACK_ID = "WMGECKETX";
 
     /**
      * Access Token
@@ -60,4 +61,24 @@ class SlackUtil {
 
         return $response;
     }
+
+    public static function postLog($log, $title = '') {
+
+        $attachment['text'] = json_encode($log, JSON_UNESCAPED_UNICODE); // 日本語はunicode変換しない
+        $attachments[] = $attachment;
+
+        $params = [];
+        $params["text"] = $title;
+        $params['attachments'] = json_encode($attachments);
+        $params["channel"] = self::AUTHOR_SLACK_ID;
+
+        $path = "chat.postMessage";
+        $body = http_build_query($params);
+        $url = self::createUrl($path, "");
+
+        $response = HttpRequestUtil::postRequest($url, $body, self::DEFAULT_HEADERS);
+
+        return $response;
+    }
+
 }
