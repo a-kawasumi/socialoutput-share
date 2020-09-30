@@ -24,20 +24,24 @@ class SlackController extends Controller
 
         $response['all'] = $request->all();
 
-        $response['message'] = 'success?';
+        SlackUtil::postLog($request->all(), "👏 Success");
+
+        $response['message'] = 'success';
         return new JsonResponse($response);
     }
 
     /**
      * SlackEvent発火時にPOSTされるメソッド
      * messageを解析してnote投稿のみスプシに書き込み
+     *
+     * エラー時も200で返す必要がある
      */
     public function events(Request $request) {
         $response = [];
 
         $retryNum = $request->header('X-Slack-Retry-Num');
         if ($retryNum != null) {
-            // 複数回slackからrequestがくるので、初回のみ対応
+            // 複数回slackからrequestがくるので、初回（null）のみ対応
             return response('', 200);
         }
 
@@ -50,16 +54,36 @@ class SlackController extends Controller
             return response('typeがevent_callback以外は未対応です。', 200);
         }
 
+        $token = $request->input('token');
+        if ($token != env('SLACK_VERIFICATION_TOKEN')) {
+            return response('tokenの値が不正です', 200);
+        }
+
+        $apiAppID = $request->input('api_app_id');
+        if ($apiAppID != env('SLACK_API_APP_ID')) {
+            return response('許可されていないSlackアプリケーションです', 200);
+        }
+
+        $workspaceID = $request->input('team_id');
+        if ($workspaceID != env('SLACK_WORKSPACE_ID')) {
+            return response('許可されていないworkspaceです', 200);
+        }
+
         $event = $request->input('event');
         $channel = $event['channel'];
 
-        if ($channel != self::SOCIAL_OUTPUT_SHARE_SLACK_ID) {
-            return response('#000_socialoutput_share チャンネルのみ対応しています', 200);
-        }
+        // if ($channel != self::SOCIAL_OUTPUT_SHARE_SLACK_ID) {
+        //     return response('#000_socialoutput_share チャンネルのみ対応しています', 200);
+        // }
 
-        $subtype = $event['subtype'];
-        if ($subtype != 'message_changed') {
-            return response('subtypeがmessage_changed以外は未対応です', 200);
+        // $subtype = $event['subtype'];
+        // if ($subtype != 'message_changed') {
+        //     return response('subtypeがmessage_changed以外は未対応です', 200);
+        // }
+
+        if (!array_key_exists('message', $event)) {
+            SlackUtil::postLog($request->all(), "⛅️ messageが見つかりません");
+            return response('messageが見つかりません', 200);
         }
 
         // messageの抽出
@@ -76,7 +100,7 @@ class SlackController extends Controller
         }
 
         $timestamp = $request->input('event_time');
-        $date = gmdate("Y-m-d H:i", $timestamp);
+        $date = date("Y-m-d H:i", (int) $timestamp);
         // user_nameを取る手段がないので仕方なく別シートから参照
         $userNameFuncText = '=VLOOKUP("' . $userId . '", members!$A$1:$B$256, 2, 0)';
 
@@ -89,8 +113,14 @@ class SlackController extends Controller
 
         $values = [$records];
         $result = GoogleSheetController::create($values);
+        if (empty($result)) {
+            SlackUtil::postLog($result, "🤖 Spreadsheetへの書き込みエラー");
+            return response('Spreadsheetへの書き込みに失敗しました', 200);
+        }
 
         $response['result'] = $result;
+        $response['message'] = 'Success';
+        SlackUtil::postLog($request->all(), "🐊 Success！");
 
         return new JsonResponse($response);
     }
