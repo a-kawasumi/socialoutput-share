@@ -76,29 +76,56 @@ class SlackController extends Controller
             }
         }
 
-        // messageの抽出
-        $message = $event['message'];
-        $userId = $message['user'];
-        $text = $message['text'];
-
-        $pattern = "/<https?:\/\/note.com\/.+>/";
-        preg_match_all($pattern, $text, $matches);
-
-        $patternAll = $matches[0];
-        if (empty($patternAll)) {
-            return response('noteのurlが見つかりませんでした', 200);
+        if (!array_key_exists('blocks', $event)) {
+            SlackUtil::postLog($request->all(), "⛅️ blocksが見つかりません");
+            return response('blocksが見つかりません', 200);
         }
 
+        $blocks = $event['blocks'];
+
+        // noteのURLを特定
+        $noteURLs = [];
+        foreach ($blocks as $block) {
+            $elementArray = $block['elements'];
+            // elements が二重で存在する
+            foreach ($elementArray as $elementSection) {
+                if ($elementSection['type'] != "rich_text_section") {
+                    continue;
+                }
+                $elements = $elementSection['elements'];
+                foreach ($elements as $element) {
+                    if ($element['type'] != 'link') {
+                        continue;
+                    }
+
+                    $url = $element['url'];
+                    $isNoteURL = SlackControllerUtil::isNoteURL($url);
+                    if(!$isNoteURL) {
+                        continue;
+                    }
+
+                    $noteURLs[] = $url; // noteURLなら追加
+                }
+            }
+        }
+
+        if (empty($noteURLs)) {
+            return response('noteのURLが見つかりません', 200);
+        }
+
+        // ユーザの特定
+        $userId = $event['user'];
+
+        // 時刻の特定
         $timestamp = $request->input('event_time');
         $date = date("Y-m-d H:i", (int) $timestamp);
+
         // user_nameを取る手段がないので仕方なく別シートから参照
         $userNameFuncText = '=VLOOKUP("' . $userId . '", members!$A$1:$B$256, 2, 0)';
 
         $records = [$date, $userNameFuncText];
-        foreach ($patternAll as $key => $match) {
-            $match = rtrim($match, '>');
-            $match = ltrim($match, '<');
-            $records[] = $match;
+        foreach ($noteURLs as $url) {
+            $records[] = $url;
         }
 
         $values = [$records];
